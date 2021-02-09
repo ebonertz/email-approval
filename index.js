@@ -2,7 +2,6 @@ var integrifyLambda = require('integrify-aws-lambda');
 var request = require("request");
 var fetch = require('node-fetch');
 
-
 var config = {
     helpUrl: "http://www.integrify.com",
     inputs: [
@@ -39,7 +38,7 @@ const exec = (event, context, callback) => {
     console.log(`Parsed Approval Choice: ${parseChoice}`);
 
     let processDetails = getProcess();
-    console.log(`Process Details: ${processDetails}`)
+    console.log(`Process Details: ${JSON.stringify(processDetails)}`)
 
     // const approvalTaskStatus = completeApprovalTask(parseChoice);
     
@@ -47,28 +46,25 @@ const exec = (event, context, callback) => {
     console.log(`AWS REQUEST ID: ${awsId}`)
     
     return callback(null,{"successMessage": "Request Succeeded", "RequestId": awsId, "body": body, "Result": processDetails});
-    };
+};
 
-    const parseApprovalChoice = (body) => {
-        console.log(`BodyText: ${body}`)
-        let responseArray = body.split("\n");
-        console.log(`Response Array: ${responseArray}`);
-        let approvalChoice = responseArray[0];
-        // console.log(`Approval Choice: ${approvalChoice}`);
-        return approvalChoice
-    }
+const parseApprovalChoice = (body) => {
+    console.log(`BodyText: ${body}`)
+    let responseArray = body.split("\n");
+    console.log(`Response Array: ${responseArray}`);
+    let approvalChoice = responseArray[0];
+    // console.log(`Approval Choice: ${approvalChoice}`);
+    return approvalChoice
+}
     
-
 const impersonateUser = () => {
 
     var request = require('request');
     var options = {
         'method': 'GET',
-        'url': 'https://services7.integrify.com/access/impersonate?key=services_api&user=ebonertz',
-        'headers': {
-            'Cookie': 'AWSALB=SF2LnldVUql8gSVj3OwbsUqc1t6KiszJL4MgXsKW22gRcKjolbmwz5SY9iBjTPGAzCaXwRpPJI53wsL4u9/zask4JVE08NsNIbUhdc8CSjPvOuxmes0J4Dbsyyp4; AWSALBCORS=SF2LnldVUql8gSVj3OwbsUqc1t6KiszJL4MgXsKW22gRcKjolbmwz5SY9iBjTPGAzCaXwRpPJI53wsL4u9/zask4JVE08NsNIbUhdc8CSjPvOuxmes0J4Dbsyyp4'
-        }
+        'url': 'https://services7.integrify.com/access/impersonate?key=services_api&user=ebonertz'
     };
+    
     request(options, function (error, response) {
     if (error) throw new Error(error);
     console.log(response.body);
@@ -89,11 +85,13 @@ const getProcess = async () => {
     };
 
     try {
-        const response = await fetch("https://services7.integrify.com/process/44755099-73aa-42ab-83ed-90628fc4d8ad", requestOptions)
-        console.log(response);
+        const response = await fetch("https://services7.integrify.com/processes/44755099-73aa-42ab-83ed-90628fc4d8ad", requestOptions)
+        console.log(response.body);
+        const data = await response.json();
+        const processDetails = JSON.stringify(data)
 
-        // const process = await response.json();
-        return response;
+        console.log(`Data: ${processDetails}`);
+        return processDetails;
 
       } catch (error) {
         console.log('error', error);
@@ -124,9 +122,6 @@ const getProcess = async () => {
 //     });
 // }
     
-  
-    
-
 
 config.execute = exec;
 
