@@ -83,7 +83,7 @@ const getProcess = async () => {
     var requestOptions = {
       method: 'GET',
       headers: {
-        'Authorization': 'Bearer 7518bc65ea1e458face32ea089c4d8b3',
+        'Authorization': '<token>',
         'Content-Type': 'application/json'
       }
     };
