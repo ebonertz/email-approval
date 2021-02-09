@@ -1,0 +1,19 @@
+{
+  "name": "custom-lambda",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-cli": "^0.0.2",
+    "axios": "^0.21.1",
+    "html-to-text": "^6.0.0",
+    "integrify-aws-lambda": "^1.1.1",
+    "node-fetch": "^2.6.1",
+    "request": "^2.88.2"
+  }
+}
