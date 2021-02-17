@@ -1,5 +1,4 @@
 var integrifyLambda = require('integrify-aws-lambda');
-var request = require("request");
 var fetch = require('node-fetch');
 
 var config = {
@@ -19,7 +18,7 @@ var config = {
 
 console.log("Got Here");
 
-const exec = (event, context, callback) => {
+const exec = async (event, context, callback) => {
     
     let process_id = process.env.process_id
     let username = process.env.username
@@ -27,59 +26,70 @@ const exec = (event, context, callback) => {
     let accessToken = event.accessToken;
     let body = event.inputs._body
     
-    console.log(`The Event: ${event}`);
+    console.log(`The Event: ${JSON.stringify(event)}`);
     console.log(`Access Token: ${accessToken}`);
     console.log(`Service URL: ${integrifyServiceUrl}`);
+    
+    try {
 
-    const impersonatedToken = impersonateUser();
     
     const parseChoice = parseApprovalChoice(body);
+    const approvalChoice = parseChoice[0];
+    const comments = parseChoice[1];
+    const parsedUsername = parseChoice[25];
+    const recipTaskSid = parseChoice[26];
+    
+    console.log(`Parse Email Body Array: ${parseChoice}`)
+    console.log(`Parsed Approval Choice: ${approvalChoice}`);
+    console.log(`Comments: ${comments}`);
+    console.log(`Parsed Username:${parsedUsername}`);
 
-    console.log(`Parsed Approval Choice: ${parseChoice}`);
+    let userToken = await impersonateUser(parsedUsername);
+    console.log(`Impersonated Token: ${userToken}`);
 
-    let processDetails = getProcess();
-    console.log(`Process Details: ${JSON.stringify(processDetails)}`)
+    let processDetails = await getProcess(userToken);
+    console.log(`Process Details: ${processDetails}`)
 
-    // const approvalTaskStatus = completeApprovalTask(parseChoice);
+    const approvalTaskStatus = completeApprovalTask(approvalChoice, comments, userToken, recipTaskSid);
+    console.log(`Approval Response: ${approvalTaskStatus}`)
     
     let awsId = context.awsRequestId
     console.log(`AWS REQUEST ID: ${awsId}`)
     
-    return callback(null,{"successMessage": "Request Succeeded", "RequestId": awsId, "body": body, "Result": processDetails});
+    return callback(null,{"successMessage": "Request Succeeded", "RequestId": awsId, "body": body, "Result": approvalTaskStatus});
+
+    } catch (error) {
+        return callback(error);
+    }
 };
 
 const parseApprovalChoice = (body) => {
     console.log(`BodyText: ${body}`)
     let responseArray = body.split("\n");
     console.log(`Response Array: ${responseArray}`);
-    let approvalChoice = responseArray[0];
-    // console.log(`Approval Choice: ${approvalChoice}`);
-    return approvalChoice
+    return responseArray
 }
     
-const impersonateUser = () => {
+const impersonateUser = async (parsedUsername) => {
 
-    var request = require('request');
     var options = {
         'method': 'GET',
-        'url': 'https://services7.integrify.com/access/impersonate?key=services_api&user=ebonertz'
+        'url': "https://services7.integrify.com/access/impersonate?key=services_api&user=" + parsedUsername
     };
     
-    request(options, function (error, response) {
-    if (error) throw new Error(error);
-    console.log(response.body);
-    let token = response.body.token
+    let response =  await fetch(options.url)
+    let data = await response.json();
+    let token = data.token
     return token;
-    });
 
-}
+    };
 
-const getProcess = async () => {
+const getProcess = async (userToken) => {
         
     var requestOptions = {
       method: 'GET',
       headers: {
-        'Authorization': '<token>',
+        'Authorization': 'Bearer ' + userToken,
         'Content-Type': 'application/json'
       }
     };
@@ -98,29 +108,35 @@ const getProcess = async () => {
     }
 };  
     
-//     const completeApprovalTask = (parseChoice) => {
-//     console.log(parseChoice);
+    const completeApprovalTask = async (approvalChoice, comments, userToken, recipTaskSid) => {
+    console.log(approvalChoice);
+    console.log(comments);
+    console.log(userToken);
+    console.log(recipTaskSid);
 
-//     var options = {
-//         'method': 'POST',
-//         'url': 'https://services7.integrify.com/tasktypes/approval/94975a8a-eeec-476d-bada-be784cc9d82a',
-//         'headers': {
-//             'Authorization': 'Bearer 7518bc65ea1e458face32ea089c4d8b3',
-//             'Content-Type': 'application/json'
-//         },
-//         'body': JSON.stringify({ "Approval": parseChoice, "Comments": "These are some comments" })
-//     };
+    let url = 'https://services7.integrify.com/tasktypes/approval/' + recipTaskSid
 
-//      request(options, function (error, response) {
-//         if (error) {
-//             throw new Error(error);
-//         } else {
-//             let approvalTaskResponse = await response.body;
-//             console.log(`Response: ${approvalTaskResponse}`);
-//             return approvalTaskResponse;
-//         }
-//     });
-// }
+    let requestOptions = {
+        'method': 'POST',
+        'headers': {
+            'Authorization': 'Bearer ' + userToken,
+            'Content-Type': 'application/json'
+        },
+        'body': JSON.stringify({ "Approval": approvalChoice, "Comments": comments })
+    };
+
+    try {
+        const response = await fetch(url, requestOptions)
+        const data = await response.json();
+        const approvalResponse = JSON.stringify(data);
+
+        console.log(`Approval Response: ${approvalResponse}`);
+        return approvalResponse;
+
+      } catch (error) {
+        console.log('error', error);
+    }
+}
     
 
 config.execute = exec;
@@ -128,3 +144,17 @@ config.execute = exec;
 let customFunction = new integrifyLambda(config);
 
 exports.handler = customFunction.handler;
+
+// customFunction.handler({
+//     "operation": "runtime.execute",
+//     "inputs": {
+//         "_decision": "",
+//         "_body": "Approved\nThis is a comment for you\n\nFrom: integrifyemailapproval@gmail.com <integrifyemailapproval@gmail.com>\nDate: Tuesday, February 9, 2021 at 2:40 PM\nTo: Evan Bonertz <evan.bonertz@integrify.com>\nSubject: A message from Integrify\n\nYour approval has been requested for the following:\n\nREQUEST SUMMARY\nRequest #: 1726\nRequest Type: Email Approval Test\nRequested by: Evan Bonertz\nCurrent Status: Started - 09-Feb-2021\n\nTo view the details and complete your approval for this request click the following link:\nhttps://services7.integrify.com/#/section-dashboard/recipienttask/787e6911-429b-44a9-80a3-639132cdd8e7\n\n\n\n123\n\nProcess SID:44755099-73aa-42ab-83ed-90628fc4d8ad\n\nebonertz\n84bcc7c6-9cba-4d94-8a84-0b3f97cfd877\n\n\n\n\n\n\n",
+//         "_name": "Evan Bonertz",
+//         "_requestId": 1727
+//     },
+//     "integrifyServiceUrl": "https://services7.integrify.com",
+//     "accessToken": "57478415f1f34b518e87741735cdd831"
+// },null, function(error,result){
+//     console.log(result);
+// })
