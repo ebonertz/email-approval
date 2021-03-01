@@ -1,11 +1,11 @@
 {
-    "operation": "runtime.execute",
-    "inputs": {
-      "_decisions": "Approve",
-      "_body": "<html><head></head><body><div id ='foo'>Approved</div><div>Yes i am comment</div><div><br></div><div></div></body></html>",
-      "_name": "Dan Jankowski",
-      "_requestId": "1701"
-    },
-    "integrifyServiceUrl": "https://services7.integrify.com",
-    "accessToken": "3cd7b961852d41c5aae81bcc1ac9d8a6"
-  }
+  "operation": "runtime.execute",
+  "inputs": {
+      "_decision": "",
+      "_body": "Approved\nThis is a comment for you\n\nFrom: integrifyemailapproval@gmail.com <integrifyemailapproval@gmail.com>\nDate: Tuesday, February 9, 2021 at 2:40 PM\nTo: Evan Bonertz <evan.bonertz@integrify.com>\nSubject: A message from Integrify\n\nYour approval has been requested for the following:\n\nREQUEST SUMMARY\nRequest #: 1726\nRequest Type: Email Approval Test\nRequested by: Evan Bonertz\nCurrent Status: Started - 09-Feb-2021\n\nTo view the details and complete your approval for this request click the following link:\nhttps://services7.integrify.com/#/section-dashboard/recipienttask/787e6911-429b-44a9-80a3-639132cdd8e7\n\n\n\n123\n\nProcess SID:44755099-73aa-42ab-83ed-90628fc4d8ad\n\nebonertz\n\n42efc52b-4a70-4dce-b854-4f15f7d2d8f2\n\n\n\n\n\n\n",
+      "_name": "Evan Bonertz",
+      "_requestId": 1727
+  },
+  "integrifyServiceUrl": "https://services7.integrify.com",
+  "accessToken": "57478415f1f34b518e87741735cdd831"
+}

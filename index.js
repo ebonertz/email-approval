@@ -18,8 +18,8 @@ var config = {
 
 const exec = async (event, context, callback) => {
     
-    let process_id = process.env.process_id
-    let username = process.env.username
+    // let process_id = process.env.process_id
+    // let username = process.env.username
     let integrifyServiceUrl = event.integrifyServiceUrl;
     let accessToken = event.accessToken;
     let body = event.inputs._body
@@ -41,17 +41,16 @@ const exec = async (event, context, callback) => {
     console.log(`Parsed Username:${parsedUsername}`);
     console.log(`Recip Task Sid: ${recipTaskSid}`);
 
-    let userToken = await impersonateUser(parsedUsername);
+    let userToken = await impersonateUser(integrifyServiceUrl, parsedUsername);
     console.log(`Impersonated Token: ${userToken}`);
 
-    const approvalResponse = completeApprovalTask(approvalChoice, comments, userToken, recipTaskSid);
-    let approvalTaskStatus = approvalResponse.status
-    console.log(`Approval Response: ${approvalTaskStatus}`)
+    const approvalResponse = await completeApprovalTask(approvalChoice, comments, userToken, recipTaskSid);
+    console.log(`Approval Response: ${approvalResponse}`)
     
     let awsId = context.awsRequestId
     console.log(`AWS REQUEST ID: ${awsId}`)
     
-    return callback(null,{"successMessage": "Request Succeeded", "RequestId": awsId, "body": body, "Result": approvalTaskStatus});
+    return callback(null,{"successMessage": "Request Succeeded", "RequestId": awsId, "body": body, "Result": approvalResponse});
 
     } catch (error) {
         return callback(error);
@@ -65,14 +64,15 @@ const parseApprovalChoice = (body) => {
     return responseArray
 }
     
-const impersonateUser = async (parsedUsername) => {
+const impersonateUser = async (integrifyServiceUrl, parsedUsername) => {
 
+    let url = integrifyServiceUrl + "/access/impersonate?key=services_api&user=" + parsedUsername
     var options = {
         'method': 'GET',
-        'url': "https://services7.integrify.com/access/impersonate?key=services_api&user=" + parsedUsername
+        'url': url
     };
     
-    let response =  await fetch(options.url)
+    let response =  await fetch(url)
     let data = await response.json();
     let token = data.token
     return token;
@@ -122,6 +122,8 @@ let customFunction = new integrifyLambda(config);
 
 exports.handler = customFunction.handler;
 
+// Run the function locally with debugger by invoking the customFunction Handler and passing in inputs object
+
 // customFunction.handler({
 //     "operation": "runtime.execute",
 //     "inputs": {
@@ -131,7 +133,7 @@ exports.handler = customFunction.handler;
 //         "_requestId": 1727
 //     },
 //     "integrifyServiceUrl": "https://services7.integrify.com",
-//     "accessToken": "57478415f1f34b518e87741735cdd831"
+//     "accessToken": " <token> "
 // },null, function(error,result){
 //     console.log(result);
 // })
